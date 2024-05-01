@@ -277,6 +277,11 @@ func (c *client) RESTMapper() meta.RESTMapper {
 
 // Create implements client.Client.
 func (c *client) Create(ctx context.Context, obj Object, opts ...CreateOption) error {
+	fmt.Println("(sleeveless) Create:", obj.GetName())
+	// labels := make(map[string]string)
+	// labels["tracey-ui"] = "sleeveless"
+	// obj.SetLabels(labels)
+
 	switch obj.(type) {
 	case runtime.Unstructured:
 		return c.unstructuredClient.Create(ctx, obj, opts...)
@@ -289,6 +294,11 @@ func (c *client) Create(ctx context.Context, obj Object, opts ...CreateOption) e
 
 // Update implements client.Client.
 func (c *client) Update(ctx context.Context, obj Object, opts ...UpdateOption) error {
+	fmt.Println("(sleeveless) Update:", obj.GetName())
+	// labels := make(map[string]string)
+	// labels["tracey-ui"] = "sleeveless"
+	// obj.SetLabels(labels)
+
 	defer c.resetGroupVersionKind(obj, obj.GetObjectKind().GroupVersionKind())
 	switch obj.(type) {
 	case runtime.Unstructured:
@@ -302,6 +312,7 @@ func (c *client) Update(ctx context.Context, obj Object, opts ...UpdateOption) e
 
 // Delete implements client.Client.
 func (c *client) Delete(ctx context.Context, obj Object, opts ...DeleteOption) error {
+	fmt.Println("(sleeveless) Delete:", obj.GetName())
 	switch obj.(type) {
 	case runtime.Unstructured:
 		return c.unstructuredClient.Delete(ctx, obj, opts...)
@@ -314,6 +325,7 @@ func (c *client) Delete(ctx context.Context, obj Object, opts ...DeleteOption) e
 
 // DeleteAllOf implements client.Client.
 func (c *client) DeleteAllOf(ctx context.Context, obj Object, opts ...DeleteAllOfOption) error {
+	fmt.Println("(sleeveless) DeleteAllOf objName:", obj.GetName())
 	switch obj.(type) {
 	case runtime.Unstructured:
 		return c.unstructuredClient.DeleteAllOf(ctx, obj, opts...)
@@ -326,6 +338,7 @@ func (c *client) DeleteAllOf(ctx context.Context, obj Object, opts ...DeleteAllO
 
 // Patch implements client.Client.
 func (c *client) Patch(ctx context.Context, obj Object, patch Patch, opts ...PatchOption) error {
+	fmt.Println("(sleeveless) Patch:", obj.GetName())
 	defer c.resetGroupVersionKind(obj, obj.GetObjectKind().GroupVersionKind())
 	switch obj.(type) {
 	case runtime.Unstructured:
@@ -339,6 +352,7 @@ func (c *client) Patch(ctx context.Context, obj Object, patch Patch, opts ...Pat
 
 // Get implements client.Client.
 func (c *client) Get(ctx context.Context, key ObjectKey, obj Object, opts ...GetOption) error {
+	fmt.Println("(sleeveless) Get:", obj.GetName())
 	if isUncached, err := c.shouldBypassCache(obj); err != nil {
 		return err
 	} else if !isUncached {
@@ -588,4 +602,19 @@ func (sc *subResourceClient) Patch(ctx context.Context, obj Object, patch Patch,
 	default:
 		return sc.client.typedClient.PatchSubResource(ctx, obj, sc.subResource, patch, opts...)
 	}
+}
+
+type sleevelessClient struct {
+	client
+
+	currentTaint string // to keep track of the current taint
+}
+
+func (c *sleevelessClient) Update(ctx context.Context, obj Object, opts ...UpdateOption) error {
+	// set a custom label before transferring control to the client.Update Function
+	fmt.Println("sleeveless: control inside the Sleeveless Update function")
+	labels := make(map[string]string)
+	labels["tracey-ui"] = "sleeveless"
+	obj.SetLabels(labels)
+	return c.client.Update(ctx, obj, opts...)
 }
